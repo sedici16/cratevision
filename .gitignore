@@ -6,4 +6,4 @@ venv/
 *.jpg
 *.webp
 *.png
-test_*.py
+/test_*.py
