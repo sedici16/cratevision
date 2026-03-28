@@ -24,6 +24,11 @@ jobs:
           pip install pytest
 
       - name: Run tests
+        env:
+          TELEGRAM_BOT_TOKEN: fake
+          hf: fake
+          DISCOGS_CONSUMER_KEY: fake
+          DISCOGS_CONSUMER_SECRET: fake
         run: pytest tests/ -v
 
   deploy:
