@@ -10,6 +10,7 @@ from bot.vision import extract_vinyl_info
 from bot.discogs import search_release, get_release_details, build_release_summary
 from bot.analyst import analyze_release
 from bot.vinted import search_vinted
+from bot.db import log_search
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +211,19 @@ async def _run_discogs_pipeline(update: Update, status_msg, vinyl_info: dict):
         parse_mode=ParseMode.HTML,
     )
     analysis = analyze_release(summary, vinted_data)
+
+    # Log to analytics
+    user = update.effective_user
+    if user:
+        log_search(
+            user_id=user.id,
+            username=user.username,
+            first_name=user.first_name,
+            artist=summary["artists"],
+            title=summary["title"],
+            verdict=analysis["verdict"],
+            discogs_id=summary.get("id"),
+        )
 
     # Step 4: Send response
     await status_msg.delete()

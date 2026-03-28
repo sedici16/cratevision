@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrateVision Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            padding: 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 24px;
+            color: #fff;
+        }
+        h1 span { color: #1db954; }
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #2a2a2a;
+        }
+        .card .value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .card .label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Charts */
+        .charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .chart-box {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #2a2a2a;
+        }
+        .chart-box canvas {
+            max-height: 280px;
+        }
+
+        /* Tables */
+        .tables {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .table-box {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #2a2a2a;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid #333;
+            color: #888;
+            font-weight: 500;
+        }
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #1f1f1f;
+        }
+        tr:hover td { background: #222; }
+
+        /* Verdict badges */
+        .verdict {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .verdict-BUY { background: #1db95433; color: #1db954; }
+        .verdict-MILD { background: #f5a62333; color: #f5a623; }
+        .verdict-SKIP { background: #e5484d33; color: #e5484d; }
+        .verdict-NA { background: #33333366; color: #888; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .charts { grid-template-columns: 1fr; }
+            .tables { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1><span>&#x25C9;</span> CrateVision Analytics</h1>
+
+    <!-- Overview Cards -->
+    <div class="cards">
+        <div class="card">
+            <div class="value">{{ stats.total_users }}</div>
+            <div class="label">Total Users</div>
+        </div>
+        <div class="card">
+            <div class="value">{{ stats.total_searches }}</div>
+            <div class="label">Total Searches</div>
+        </div>
+        <div class="card">
+            <div class="value">{{ stats.searches_today }}</div>
+            <div class="label">Searches Today</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts">
+        <div class="chart-box">
+            <h2>Searches Over Time</h2>
+            <canvas id="timeChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h2>Verdicts</h2>
+            <canvas id="verdictChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h2>Top Artists</h2>
+            <canvas id="artistChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tables -->
+    <div class="tables">
+        <div class="table-box">
+            <h2>Recent Searches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Artist</th>
+                        <th>Title</th>
+                        <th>Verdict</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in recent %}
+                    <tr>
+                        <td>{{ s.timestamp }}</td>
+                        <td>{{ s.username or s.first_name or '?' }}</td>
+                        <td>{{ s.artist or '?' }}</td>
+                        <td>{{ s.title or '?' }}</td>
+                        <td>
+                            {% set v = s.verdict or 'N/A' %}
+                            <span class="verdict verdict-{{ v.replace('/', '') }}">{{ v }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not recent %}
+                    <tr><td colspan="5" style="text-align:center;color:#555;">No searches yet</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-box">
+            <h2>Users</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Searches</th>
+                        <th>Last Active</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ u.username or u.first_name or u.user_id }}</td>
+                        <td>{{ u.search_count }}</td>
+                        <td>{{ u.last_seen }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not users %}
+                    <tr><td colspan="3" style="text-align:center;color:#555;">No users yet</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const verdictColors = {
+            'BUY': '#1db954',
+            'MILD': '#f5a623',
+            'SKIP': '#e5484d',
+            'N/A': '#555',
+        };
+
+        // Searches over time (line chart)
+        const timeData = {{ searches_over_time | tojson }};
+        new Chart(document.getElementById('timeChart'), {
+            type: 'line',
+            data: {
+                labels: timeData.map(d => d.date),
+                datasets: [{
+                    label: 'Searches',
+                    data: timeData.map(d => d.count),
+                    borderColor: '#1db954',
+                    backgroundColor: '#1db95422',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#666' }, grid: { color: '#1f1f1f' } },
+                    y: { ticks: { color: '#666', stepSize: 1 }, grid: { color: '#1f1f1f' }, beginAtZero: true },
+                }
+            }
+        });
+
+        // Verdict distribution (doughnut)
+        const verdictData = {{ verdict_dist | tojson }};
+        new Chart(document.getElementById('verdictChart'), {
+            type: 'doughnut',
+            data: {
+                labels: verdictData.map(d => d.verdict),
+                datasets: [{
+                    data: verdictData.map(d => d.count),
+                    backgroundColor: verdictData.map(d => verdictColors[d.verdict] || '#555'),
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#aaa', padding: 12 } }
+                }
+            }
+        });
+
+        // Top artists (horizontal bar)
+        const artistData = {{ top_artists | tojson }};
+        new Chart(document.getElementById('artistChart'), {
+            type: 'bar',
+            data: {
+                labels: artistData.map(d => d.artist),
+                datasets: [{
+                    data: artistData.map(d => d.count),
+                    backgroundColor: '#1db95466',
+                    borderColor: '#1db954',
+                    borderWidth: 1,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#666', stepSize: 1 }, grid: { color: '#1f1f1f' }, beginAtZero: true },
+                    y: { ticks: { color: '#ccc' }, grid: { display: false } },
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -7,3 +7,5 @@ venv/
 *.webp
 *.png
 /test_*.py
+data/
+*.db

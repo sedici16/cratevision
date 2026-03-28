@@ -1,4 +1,4 @@
-name: Tests
+name: Tests & Deploy
 
 on:
   push:
@@ -25,3 +25,23 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/cratevision
+            git pull origin main
+            source venv/bin/activate
+            pip install -r requirements.txt --quiet
+            systemctl --user restart cratevision
+            echo "Deployed $(git log --oneline -1)"

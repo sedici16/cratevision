@@ -1,15 +1,19 @@
 import logging
 import ssl
+import threading
 import httpx
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from telegram.request import HTTPXRequest
 
 from bot.config import TELEGRAM_BOT_TOKEN, validate
 from bot.handlers import start_handler, help_handler, photo_handler, document_handler, correction_handler
+from bot.db import init_db
+from bot.dashboard import create_app
 
 
 def main():
     validate()
+    init_db()
 
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -44,6 +48,14 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     app.add_handler(MessageHandler(filters.Document.IMAGE, document_handler))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^correction:"), correction_handler))
+
+    # Start dashboard in background thread
+    dashboard = create_app()
+    threading.Thread(
+        target=lambda: dashboard.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False),
+        daemon=True,
+    ).start()
+    logging.info("Dashboard running at http://localhost:5000")
 
     logging.info("CrateVision bot starting...")
     app.run_polling()
