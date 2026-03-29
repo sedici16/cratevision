@@ -1,4 +1,5 @@
 import logging
+import re
 import requests
 from bot.config import DISCOGS_CONSUMER_KEY, DISCOGS_CONSUMER_SECRET, DISCOGS_BASE_URL, DISCOGS_USER_AGENT
 
@@ -17,21 +18,46 @@ def search_release(vinyl_info: dict) -> list[dict]:
     # Use format from vision/correction if provided, default to Vinyl
     fmt = vinyl_info.get("format", "Vinyl") or "Vinyl"
     # Map common names to Discogs format values
-    fmt_map = {"lp": "Vinyl", "vinyl": "Vinyl", "record": "Vinyl", "cassette": "Cassette", "cd": "CD"}
-    discogs_format = fmt_map.get(fmt.lower().strip(), fmt)
+    fmt_map = {"lp": "Vinyl", "vinyl": "Vinyl", "record": "Vinyl", "vinyl record": "Vinyl",
+               "12\"": "Vinyl", "7\"": "Vinyl", "10\"": "Vinyl", "cassette": "Cassette",
+               "tape": "Cassette", "cd": "CD", "compact disc": "CD"}
+    # Normalize: strip size prefixes like '12" vinyl' → 'vinyl', then map
+    fmt_lower = fmt.lower().strip()
+    fmt_stripped = re.sub(r'^\d+"\s*', '', fmt_lower).strip() or fmt_lower
+    discogs_format = fmt_map.get(fmt_stripped, fmt_map.get(fmt_lower, "Vinyl"))
+
+    logger.info("Discogs search input — artist=%r, title=%r, catno=%r, format=%r (mapped=%r)",
+                artist, title, catno, fmt, discogs_format)
 
     strategies = []
     # Strategy 1: artist + title
     if artist and title:
         strategies.append({"artist": artist, "release_title": title, "type": "release", "format": discogs_format})
-    # Strategy 2: catalog number
-    if catno:
-        strategies.append({"catno": catno, "type": "release", "format": discogs_format})
+    # Strategy 2: catalog number + artist (avoid blind catno matches)
+    if catno and artist:
+        strategies.append({"catno": catno, "artist": artist, "type": "release", "format": discogs_format})
+    # Strategy 2b: catalog number + title
+    if catno and title:
+        strategies.append({"catno": catno, "release_title": title, "type": "release", "format": discogs_format})
     # Strategy 3: title only
     if title:
         strategies.append({"release_title": title, "type": "release", "format": discogs_format})
+    # Strategy 4: loose query (artist + title as free text) — catches vision typos
+    if artist and title:
+        strategies.append({"q": f"{artist} {title}", "type": "release", "format": discogs_format})
+    # Strategy 5: loose query without format filter
+    if artist and title:
+        strategies.append({"q": f"{artist} {title}", "type": "release"})
+    # Strategy 6: keyword-stripped query — remove filler/noise words from vision output
+    if artist and title:
+        filler = {"a", "an", "the", "that", "thats", "that's", "this", "its", "it's", "is", "of", "and", "or", "in", "on", "to"}
+        words = re.sub(r"[^a-zA-Z0-9\s]", " ", title).split()
+        keywords = [w for w in words if w.lower() not in filler and len(w) > 1]
+        stripped_q = f"{artist} {' '.join(keywords)}".strip()
+        if stripped_q != f"{artist} {title}":
+            strategies.append({"q": stripped_q, "type": "release"})
 
-    for params in strategies:
+    for i, params in enumerate(strategies, 1):
         params.update(AUTH_PARAMS)
         params["per_page"] = 5
         try:
@@ -43,11 +69,13 @@ def search_release(vinyl_info: dict) -> list[dict]:
             )
             r.raise_for_status()
             results = r.json().get("results", [])
+            logger.info("Discogs strategy %d returned %d results", i, len(results))
             if results:
                 return results
         except requests.RequestException as e:
-            logger.error("Discogs search failed: %s", e)
+            logger.error("Discogs search failed (strategy %d): %s", i, e)
 
+    logger.warning("Discogs: all strategies exhausted, no results found")
     return []
 
 

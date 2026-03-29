@@ -14,8 +14,18 @@ VISION_MODELS = [
     "google/gemma-3-27b-it",
 ]
 
-VISION_PROMPT = """You are a vinyl record expert. Analyze this image of a vinyl record cover or label.
-Extract the following information and return it as JSON:
+VISION_PROMPT = """You are a vinyl record text extraction service. Your job is to read text directly visible on this vinyl record cover or label.
+
+RULES:
+- Only transcribe text you can clearly see in the image
+- Do NOT guess, infer, or add words that are not visible
+- If text is partially obscured, only include the parts you can read
+- For artist and title, copy the exact text shown — no paraphrasing or rewording
+- If you cannot read a field, leave it as an empty string
+- For format, describe what you see (vinyl, CD, cassette, etc.)
+- Do NOT estimate years, catalog numbers, or labels you cannot read
+
+Return the information as JSON:
 {
   "artist": "...",
   "title": "...",

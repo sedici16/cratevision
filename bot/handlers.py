@@ -155,6 +155,7 @@ async def _process_image(update: Update, image_bytes: bytes, media_type: str):
 
     # Store result for corrections
     _last_result[chat_id] = vinyl_info
+    logger.info("Vision extracted: %s", vinyl_info)
 
     artist = vinyl_info.get("artist", "Unknown")
     title = vinyl_info.get("title", "Unknown")
