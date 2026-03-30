@@ -91,38 +91,5 @@ def extract_vinyl_info(image_bytes: bytes, media_type: str = "image/jpeg") -> di
                 logger.error("Failed to parse vision response (model=%s): %s", model, e)
                 break  # Don't retry parse errors, try next model
 
-    logger.warning("All HF models failed, trying Vasari fallback")
-    return _try_vasari(image_bytes)
-
-
-VASARI_URL = "https://vasari.hist-art.bbk.ac.uk/giorgio/see"
-VASARI_KEY = "giorgio-vasari-bbk-2026"
-
-
-def _try_vasari(image_bytes: bytes) -> dict | None:
-    """Fallback: use self-hosted Vasari vision API."""
-    try:
-        logger.info("Vision attempt with Vasari (self-hosted)")
-        response = requests.post(
-            VASARI_URL,
-            headers={"Authorization": f"Bearer {VASARI_KEY}"},
-            files={"image": ("photo.jpg", image_bytes, "image/jpeg")},
-            data={"question": VISION_PROMPT},
-            timeout=120,
-        )
-        response.raise_for_status()
-        content = response.json().get("response", "")
-
-        # Strip markdown code fences if present
-        content = content.strip()
-        if content.startswith("```"):
-            content = content.split("\n", 1)[1]
-            content = content.rsplit("```", 1)[0]
-
-        return json.loads(content)
-    except requests.RequestException as e:
-        logger.error("Vasari vision request failed: %s", e)
-        return None
-    except (json.JSONDecodeError, KeyError) as e:
-        logger.error("Failed to parse Vasari response: %s", e)
-        return None
+    logger.error("All vision models failed")
+    return None
