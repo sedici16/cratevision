@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from telegram.request import HTTPXRequest
 
 from bot.config import TELEGRAM_BOT_TOKEN, validate
-from bot.handlers import start_handler, help_handler, photo_handler, document_handler, correction_handler
+from bot.handlers import start_handler, help_handler, photo_handler, document_handler, correction_handler, mystats_handler
 from bot.db import init_db
 from bot.dashboard import create_app
 
@@ -45,6 +45,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("help", help_handler))
+    app.add_handler(CommandHandler("mystats", mystats_handler))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     app.add_handler(MessageHandler(filters.Document.IMAGE, document_handler))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^correction:"), correction_handler))

@@ -172,3 +172,51 @@ def get_users() -> list[dict]:
     """).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# ── Per-user queries ─────────────────────────────────────────────────
+
+def get_user(user_id: int) -> dict | None:
+    """Get a single user by ID."""
+    conn = _connect()
+    row = conn.execute(
+        "SELECT * FROM users WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_user_searches(user_id: int, limit: int = 100) -> list[dict]:
+    """All searches for a specific user."""
+    conn = _connect()
+    rows = conn.execute("""
+        SELECT artist, title, verdict, discogs_id, timestamp
+        FROM searches WHERE user_id = ?
+        ORDER BY timestamp DESC LIMIT ?
+    """, (user_id, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_user_stats(user_id: int) -> dict:
+    """Stats for a specific user."""
+    conn = _connect()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM searches WHERE user_id = ?", (user_id,)
+    ).fetchone()[0]
+    verdicts = conn.execute("""
+        SELECT verdict, COUNT(*) as count FROM searches
+        WHERE user_id = ? AND verdict IS NOT NULL
+        GROUP BY verdict ORDER BY count DESC
+    """, (user_id,)).fetchall()
+    top_artists = conn.execute("""
+        SELECT artist, COUNT(*) as count FROM searches
+        WHERE user_id = ? AND artist IS NOT NULL AND artist != ''
+        GROUP BY artist ORDER BY count DESC LIMIT 10
+    """, (user_id,)).fetchall()
+    conn.close()
+    return {
+        "total_searches": total,
+        "verdicts": [dict(r) for r in verdicts],
+        "top_artists": [dict(r) for r in top_artists],
+    }

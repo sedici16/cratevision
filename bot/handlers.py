@@ -10,7 +10,7 @@ from bot.vision import extract_vinyl_info
 from bot.discogs import search_release, get_release_details, build_release_summary
 from bot.analyst import analyze_release
 from bot.vinted import search_vinted
-from bot.db import log_search
+from bot.db import log_search, get_user_stats
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,38 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(WELCOME_MSG, parse_mode=ParseMode.HTML)
+
+
+async def mystats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show user their personal stats and dashboard link."""
+    user = update.effective_user
+    if not user:
+        return
+    stats = get_user_stats(user.id)
+    total = stats["total_searches"]
+    if total == 0:
+        await update.message.reply_text("You haven't searched anything yet! Send me a photo to get started.")
+        return
+
+    verdicts = {v["verdict"]: v["count"] for v in stats["verdicts"]}
+    top = stats["top_artists"][:5]
+
+    lines = [
+        f"<b>Your CrateVision Stats</b>",
+        f"",
+        f"Total searches: <b>{total}</b>",
+        f"BUY: {verdicts.get('BUY', 0)} | MILD: {verdicts.get('MILD', 0)} | SKIP: {verdicts.get('SKIP', 0)}",
+    ]
+    if top:
+        lines.append("")
+        lines.append("<b>Your top artists:</b>")
+        for a in top:
+            lines.append(f"  {a['artist']} ({a['count']})")
+
+    lines.append("")
+    lines.append(f"View full dashboard:\nhttp://83.136.105.116:5000/user/{user.id}")
+
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
 
 async def correction_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

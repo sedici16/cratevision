@@ -41,6 +41,18 @@ def create_app():
     def api_users():
         return jsonify(db.get_users())
 
+    @app.route("/user/<int:user_id>")
+    def user_dashboard(user_id):
+        user = db.get_user(user_id)
+        if not user:
+            return "User not found", 404
+        return render_template(
+            "user_dashboard.html",
+            user=user,
+            stats=db.get_user_stats(user_id),
+            searches=db.get_user_searches(user_id),
+        )
+
     return app
 
 
