@@ -13,6 +13,8 @@ HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
 VISION_MODEL = "Qwen/Qwen2.5-VL-7B-Instruct"
 ANALYST_MODEL = "Qwen/Qwen2.5-72B-Instruct"
 
+GETSONGBPM_API_KEY = os.getenv("GETSONGBPM_API_KEY")
+
 DISCOGS_BASE_URL = "https://api.discogs.com"
 DISCOGS_USER_AGENT = "CrateVision/1.0"
 

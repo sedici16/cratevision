@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrateVision — Find Records Worth Buying</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid #1f1f1f; }
+        .logo { font-size: 1.2rem; font-weight: 700; color: #fff; }
+        .logo span { color: #1db954; }
+        .nav-link { color: #aaa; text-decoration: none; font-size: 0.9rem; }
+        .nav-link:hover { color: #fff; }
+        .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 100px 24px 80px; }
+        .badge { background: #1db95420; color: #1db954; border: 1px solid #1db95440; border-radius: 20px; padding: 6px 16px; font-size: 0.8rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 28px; }
+        h1 { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 800; color: #fff; line-height: 1.15; max-width: 700px; margin-bottom: 20px; }
+        h1 span { color: #1db954; }
+        .subtitle { font-size: 1.15rem; color: #888; max-width: 500px; line-height: 1.7; margin-bottom: 40px; }
+        .cta { display: inline-flex; align-items: center; gap: 10px; background: #1db954; color: #000; font-weight: 700; font-size: 1rem; padding: 16px 32px; border-radius: 50px; text-decoration: none; transition: background 0.2s; }
+        .cta:hover { background: #1ed760; }
+        .section-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #1db954; margin-bottom: 12px; }
+        .how { padding: 80px 24px; max-width: 900px; margin: 0 auto; text-align: center; }
+        .how h2 { font-size: 2rem; color: #fff; margin-bottom: 48px; }
+        .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+        .step { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 32px 24px; text-align: left; }
+        .step-num { font-size: 2rem; font-weight: 800; color: #1db954; margin-bottom: 12px; }
+        .step h3 { font-size: 1rem; color: #fff; margin-bottom: 8px; }
+        .step p { font-size: 0.88rem; color: #777; line-height: 1.6; }
+        .verdict-section { padding: 80px 24px; max-width: 900px; margin: 0 auto; text-align: center; }
+        .verdict-section h2 { font-size: 2rem; color: #fff; margin-bottom: 48px; }
+        .verdicts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .verdict-card { border-radius: 16px; padding: 32px 20px; border: 1px solid #2a2a2a; }
+        .verdict-card.buy { background: #1db95415; border-color: #1db95440; }
+        .verdict-card.mild { background: #f59e0b15; border-color: #f59e0b40; }
+        .verdict-card.skip { background: #ef444415; border-color: #ef444440; }
+        .verdict-label { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+        .buy .verdict-label { color: #1db954; }
+        .mild .verdict-label { color: #f59e0b; }
+        .skip .verdict-label { color: #ef4444; }
+        .verdict-card p { font-size: 0.88rem; color: #777; line-height: 1.6; }
+        .example-box { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px 32px; max-width: 480px; margin: 0 auto 80px; text-align: left; font-family: monospace; font-size: 0.85rem; line-height: 1.8; color: #ccc; }
+        .record-title { color: #fff; font-weight: 700; font-size: 1rem; }
+        .buy-tag { color: #1db954; font-weight: 700; font-size: 1.1rem; }
+        .meta { color: #666; }
+        .bottom-cta { text-align: center; padding: 80px 24px 100px; border-top: 1px solid #1f1f1f; }
+        .bottom-cta h2 { font-size: 2rem; color: #fff; margin-bottom: 12px; }
+        .bottom-cta p { color: #666; margin-bottom: 32px; }
+        footer { text-align: center; padding: 24px; color: #444; font-size: 0.8rem; border-top: 1px solid #1a1a1a; }
+        @media (max-width: 600px) { nav { padding: 16px 20px; } .verdicts { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="logo">Crate<span>Vision</span></div>
+    <a href="/cratevision/dashboard/" class="nav-link">Dashboard</a>
+</nav>
+<section class="hero">
+    <div class="badge">Telegram Bot</div>
+    <h1>Know if a record is worth buying <span>before you buy it</span></h1>
+    <p class="subtitle">Snap a photo of any vinyl at a flea market or charity shop. CrateVision tells you what it is, what it sells for, and whether to grab it.</p>
+    <a href="https://t.me/cratevisionbot" class="cta" target="_blank">Open in Telegram</a>
+</section>
+<section class="how">
+    <div class="section-label">How it works</div>
+    <h2>Three steps, one verdict</h2>
+    <div class="steps">
+        <div class="step"><div class="step-num">01</div><h3>Snap a photo</h3><p>Send a photo of the record cover or label to the bot on Telegram.</p></div>
+        <div class="step"><div class="step-num">02</div><h3>AI identifies it</h3><p>Vision AI reads the artist, title, label and catalog number instantly.</p></div>
+        <div class="step"><div class="step-num">03</div><h3>Get the verdict</h3><p>Real Discogs and Vinted prices, want/have ratio, and a BUY / MILD / SKIP verdict.</p></div>
+    </div>
+</section>
+<section class="verdict-section">
+    <div class="section-label">Verdicts</div>
+    <h2>Three tiers, no guessing</h2>
+    <div class="verdicts">
+        <div class="verdict-card buy"><div class="verdict-label">BUY</div><p>High demand, strong resale value. Do not leave it on the shelf.</p></div>
+        <div class="verdict-card mild"><div class="verdict-label">MILD</div><p>Decent record with some collector interest. Worth it if the price is right.</p></div>
+        <div class="verdict-card skip"><div class="verdict-label">SKIP</div><p>Common pressing, low demand. Not worth the shelf space.</p></div>
+    </div>
+</section>
+<div style="text-align:center; padding: 0 24px 80px;">
+    <div class="section-label" style="margin-bottom:20px;">Example response</div>
+    <div class="example-box">
+        <div class="record-title">ABBA - The Singles (First Ten Years)</div>
+        <div class="meta">1982 - RCA - Australia - LP Compilation</div><br>
+        Discogs: 4 have - 28 want - from $25.00<br>
+        Vinted: 10 listings - 8-20 GBP<br><br>
+        <span class="buy-tag">BUY</span> High demand with 7:1 want/have ratio.<br>Few copies available, strong collector interest.
+    </div>
+</div>
+<section class="bottom-cta">
+    <h2>Start digging smarter</h2>
+    <p>Free to use on Telegram.</p>
+    <a href="https://t.me/cratevisionbot" class="cta" target="_blank">Open @cratevisionbot</a>
+</section>
+<footer>2026 CrateVision &nbsp;·&nbsp; BPM data by <a href="https://getsongbpm.com" target="_blank" style="color:#555;text-decoration:none;">GetSongBPM</a></footer>
+</body>
+</html>

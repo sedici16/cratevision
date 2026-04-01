@@ -5,11 +5,13 @@ from telegram import Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import ContextTypes
 
-from bot.config import HF_TOKEN, HF_API_URL, ANALYST_MODEL
+from bot.config import HF_TOKEN, HF_API_URL, ANALYST_MODEL, GETSONGBPM_API_KEY
 from bot.vision import extract_vinyl_info
 from bot.discogs import search_release, get_release_details, build_release_summary
 from bot.analyst import analyze_release
 from bot.vinted import search_vinted
+from bot.bpm import get_bpm
+from bot.whosampled import get_album_sample_data
 from bot.db import log_search, get_user_stats
 
 logger = logging.getLogger(__name__)
@@ -64,7 +66,7 @@ async def mystats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lines.append(f"  {a['artist']} ({a['count']})")
 
     lines.append("")
-    lines.append(f"View full dashboard:\nhttp://83.136.105.116:5000/user/{user.id}")
+    lines.append(f"View full dashboard:\nhttp://83.136.105.116:8090/cratevision/user/{user.id}")
 
     await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
@@ -238,6 +240,12 @@ async def _run_discogs_pipeline(update: Update, status_msg, vinyl_info: dict):
     vinted_data = search_vinted(artist, title, fmt)
     logger.info("Vinted result: %s", {k: v for k, v in vinted_data.items() if k != "listings"})
 
+    bpm_data = get_bpm(artist, title, GETSONGBPM_API_KEY)
+    logger.info("BPM result: %s", bpm_data)
+
+    sample_data = get_album_sample_data(artist, summary.get("tracklist", []))
+    logger.info("WhoSampled result: %d tracks with connections", len(sample_data))
+
     # Step 3: LLM Analysis (with Vinted data)
     await status_msg.edit_text(
         f"🔍 Found: <b>{artist} - {title}</b>\n🤖 Analyzing...",
@@ -256,14 +264,17 @@ async def _run_discogs_pipeline(update: Update, status_msg, vinyl_info: dict):
             title=summary["title"],
             verdict=analysis["verdict"],
             discogs_id=summary.get("id"),
+            youtube_url=summary.get("youtube_url"),
+            bpm=bpm_data.get("bpm") if bpm_data else None,
+            key_of=bpm_data.get("key") if bpm_data else None,
         )
 
     # Step 4: Send response
     await status_msg.delete()
-    await _send_response(update, summary, analysis, vinted_data)
+    await _send_response(update, summary, analysis, vinted_data, bpm_data, sample_data)
 
 
-async def _send_response(update: Update, summary: dict, analysis: dict, vinted_data: dict = None):
+async def _send_response(update: Update, summary: dict, analysis: dict, vinted_data: dict = None, bpm_data: dict = None, sample_data: list = None):
     """Send the final response with cover image and analysis."""
     verdict_map = {"BUY": "🟢", "MILD": "🟡", "SKIP": "🔴"}
     verdict_emoji = verdict_map.get(analysis["verdict"], "⚪")
@@ -322,6 +333,34 @@ async def _send_response(update: Update, summary: dict, analysis: dict, vinted_d
         if len(summary["tracklist"]) > 10:
             lines.append(f"   ... +{len(summary['tracklist']) - 10} more")
 
+    # BPM / Key
+    if bpm_data and bpm_data.get("bpm"):
+        bpm_line = f"🎵 <b>BPM:</b> {bpm_data['bpm']}"
+        if bpm_data.get("key"):
+            bpm_line += f"  🎹 <b>Key:</b> {bpm_data['key']}"
+        if bpm_data.get("danceability") is not None:
+            bpm_line += f"  💃 <b>Dance:</b> {bpm_data['danceability']}/100"
+        lines.append(bpm_line)
+
+    # WhoSampled (per track)
+    if sample_data:
+        lines.append("")
+        lines.append("🔁 <b>Sample connections:</b>")
+        for td in sample_data:
+            tname = td["track"]
+            parts = []
+            if td.get("contains"):
+                s = td["contains"][0]
+                parts.append("samples %s - %s" % (s["artist"], s["track"]))
+            if td.get("sampled_in"):
+                count = len(td["sampled_in"])
+                names = ", ".join(s["artist"] for s in td["sampled_in"][:2])
+                if count > 2:
+                    names += " +%d more" % (count - 2)
+                parts.append("sampled by %s" % names)
+            if parts:
+                url = td["url"]
+                lines.append('   <a href="%s">%s</a>: ' % (url, tname) + " · ".join(parts))
     # Links
     lines.append("")
     if summary["listen_url"]:
@@ -330,6 +369,10 @@ async def _send_response(update: Update, summary: dict, analysis: dict, vinted_d
         lines.append(f'▶️ <a href="{summary["youtube_url"]}">YouTube</a>')
     if summary["discogs_url"]:
         lines.append(f'🔗 <a href="{summary["discogs_url"]}">View on Discogs</a>')
+
+    user = update.effective_user
+    if user:
+        lines.append(f'\n📊 <a href="http://83.136.105.116:8090/cratevision/user/{user.id}">Your search history</a>')
 
     text = "\n".join(lines)
 

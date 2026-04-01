@@ -111,6 +111,7 @@
     </style>
 </head>
 <body>
+    <p style="margin-bottom:16px"><a href="/cratevision/dashboard/" style="color:#1db954;text-decoration:none;font-size:0.9rem;">← Back to Dashboard</a></p>
     <h1><span>&#x25C9;</span> {{ user.username or user.first_name or 'User' }}</h1>
     <div class="subtitle">Member since {{ user.first_seen[:10] }} &middot; Last active {{ user.last_seen[:10] }}</div>
 
@@ -163,9 +164,16 @@
                         {% set v = s.verdict or 'N/A' %}
                         <span class="verdict verdict-{{ v.replace('/', '') }}">{{ v }}</span>
                     </td>
+                    <td>{{ s.bpm or "-" }}</td>
+                    <td>{{ s.key_of or "-" }}</td>
                     <td>
                         {% if s.discogs_id %}
                         <a href="https://www.discogs.com/release/{{ s.discogs_id }}" target="_blank">View</a>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if s.youtube_url %}
+                        <a href="{{ s.youtube_url }}" target="_blank">▶ Play</a>
                         {% else %}-{% endif %}
                     </td>
                 </tr>

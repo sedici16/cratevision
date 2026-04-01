@@ -167,6 +167,8 @@
                         <th>User</th>
                         <th>Artist</th>
                         <th>Title</th>
+                        <th>BPM</th>
+                        <th>Key</th>
                         <th>Verdict</th>
                     </tr>
                 </thead>
@@ -177,6 +179,8 @@
                         <td>{{ s.username or s.first_name or '?' }}</td>
                         <td>{{ s.artist or '?' }}</td>
                         <td>{{ s.title or '?' }}</td>
+                        <td>{{ s.bpm or "-" }}</td>
+                        <td>{{ s.key_of or "-" }}</td>
                         <td>
                             {% set v = s.verdict or 'N/A' %}
                             <span class="verdict verdict-{{ v.replace('/', '') }}">{{ v }}</span>
@@ -203,7 +207,7 @@
                 <tbody>
                     {% for u in users %}
                     <tr>
-                        <td>{{ u.username or u.first_name or u.user_id }}</td>
+                        <td><a href="/cratevision/user/{{ u.user_id }}" style="color:#e0e0e0;text-decoration:none;" onmouseover="this.style.color='#1db954'" onmouseout="this.style.color='#e0e0e0'">{{ u.username or u.first_name or u.user_id }}</a></td>
                         <td>{{ u.search_count }}</td>
                         <td>{{ u.last_seen }}</td>
                     </tr>

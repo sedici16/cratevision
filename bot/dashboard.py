@@ -10,6 +10,10 @@ def create_app():
     app = Flask(__name__, template_folder="../templates")
 
     @app.route("/")
+    def landing():
+        return render_template("landing.html")
+
+    @app.route("/dashboard/")
     def index():
         return render_template(
             "dashboard.html",

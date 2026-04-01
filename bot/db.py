@@ -52,7 +52,7 @@ def init_db():
 
 
 def log_search(user_id: int, username: str | None, first_name: str | None,
-               artist: str, title: str, verdict: str, discogs_id: int | None = None):
+               artist: str, title: str, verdict: str, discogs_id: int | None = None, youtube_url: str | None = None, bpm: int | None = None, key_of: str | None = None):
     """Log a search and upsert the user record."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -71,9 +71,9 @@ def log_search(user_id: int, username: str | None, first_name: str | None,
 
         # Insert search
         conn.execute("""
-            INSERT INTO searches (user_id, artist, title, verdict, discogs_id, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (user_id, artist, title, verdict, discogs_id, now))
+            INSERT INTO searches (user_id, artist, title, verdict, discogs_id, youtube_url, bpm, key_of, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, artist, title, verdict, discogs_id, youtube_url, bpm, key_of, now))
 
         conn.commit()
     except Exception as e:
@@ -151,7 +151,7 @@ def get_recent_searches(limit: int = 50) -> list[dict]:
     """Most recent searches with user info."""
     conn = _connect()
     rows = conn.execute("""
-        SELECT s.artist, s.title, s.verdict, s.discogs_id, s.timestamp,
+        SELECT s.artist, s.title, s.verdict, s.discogs_id, s.bpm, s.key_of, s.timestamp,
                u.username, u.first_name
         FROM searches s
         JOIN users u ON s.user_id = u.user_id
@@ -190,7 +190,7 @@ def get_user_searches(user_id: int, limit: int = 100) -> list[dict]:
     """All searches for a specific user."""
     conn = _connect()
     rows = conn.execute("""
-        SELECT artist, title, verdict, discogs_id, timestamp
+        SELECT artist, title, verdict, discogs_id, youtube_url, bpm, key_of, timestamp
         FROM searches WHERE user_id = ?
         ORDER BY timestamp DESC LIMIT ?
     """, (user_id, limit)).fetchall()
